@@ -3,5 +3,6 @@ from Board.Board import Board
 
 board = Board()
 
-board.PrintBoard()
-board.MoveTheKey()
+board.PlayforTwo()
+
+# board.PrintBoard()
