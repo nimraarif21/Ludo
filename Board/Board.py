@@ -141,15 +141,6 @@ class Board:
 3
 
     def RollDice(self, value):
-        # if value % 2 == 1 and self.count > 2:
-        #     self.count += 1
-        #     return 0
-        # elif value % 2 == 0 and self.count > 2:
-        #     self.count += 1
-        #     return 3
-        # else:
-        #     self.count += 1
-        #     return 6
         return random.randint(1,6)
 
     def PrintHalfColumn(self, col, i, j, string):
