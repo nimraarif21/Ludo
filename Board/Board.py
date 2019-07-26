@@ -138,7 +138,6 @@ class Board:
             for j in range(0,6):
                 block = Block(self.rows_color[i],"  ")
                 self.LudoBoard[i][j]=block
-3
 
     def RollDice(self, value):
         return random.randint(1,6)
