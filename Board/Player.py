@@ -17,3 +17,6 @@ class Player:
 
     def GetStartPoint(self):
         return self.start_point
+
+    def GetColor(self):
+        return self.color

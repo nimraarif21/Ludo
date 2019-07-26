@@ -11,21 +11,47 @@ class Board:
 
     LudoBoard = []
     Players = []
-    rows_color=['red','blue','blue','blue','yellow','yellow','yellow','green','green','green','red','red']
-    Two=['Red','Yellow']
-    inverted= [2, 3, 5, 6, 7, 10]
-    CheckPoints=[2, 5, 8, 11]
-
-
+    rows_color = ['red','blue','blue','blue','yellow','yellow','yellow','green','green','green','red','red']
+    Two = ['Red','Yellow']
+    inverted = [2, 3, 5, 6, 7, 10]
+    CheckPoints = [2, 5, 8, 11]
+    count = 1
+    
     def __init__(self):
         self.CreateBoard()
-
 
     def mapStringtoInt(self, index):
         indexes = index.split(',')
         return int(indexes[0]), int(indexes[1])
 
+    def MoveorKill(self, row, col, player, key):
+        PlayerKeys = player.GetKeys()
+        nextPos = self.LudoBoard[row][col].GetValue()
+        flag = False
 
+        for i in self.Players:  #OtherPlayer
+            if i != player:
+                second_player = i
+
+        second_keys = second_player.GetKeys()
+        for i in range(len(second_keys)):
+            if second_keys[i].GetName() == nextPos:
+                second_key_index = i
+                flag = True
+        
+        if flag == True:
+            self.LudoBoard[row][col].SetValue(PlayerKeys[key].GetName())
+            second_keys[second_key_index].SetValue(0)
+            second_keys[second_key_index].SetPosition('-1,-1')
+            PlayerKeys[key].SetPosition(str(row)+','+str(col))
+            print("You killed Other Player's Key")
+            return
+        else:
+
+            PlayerKeys[key].SetPosition(str(row)+','+str(col))      
+            self.LudoBoard[row][col].SetValue(PlayerKeys[key].GetName())
+            return
+            
 
     def MoveTheKey(self, key, dice, player):
         PlayerKeys = player.GetKeys()
@@ -39,15 +65,10 @@ class Board:
             PlayerKeys[key].SetValue(1)
             PlayerKeys[key].SetPosition(index) 
             self.LudoBoard[row][col].SetValue(PlayerKeys[key].GetName())
-            self.PrintBoard()
-            return True   #need to make it false later on
-        
+            return False        
         elif PlayerKeys[key].GetValue() == 1:
-            print("coming here")
             curr_position = PlayerKeys[key].GetPosition()
-            print(curr_position)
             row, col = self.mapStringtoInt(curr_position)
-            print(row,col)
             self.LudoBoard[row][col].SetValue("  ")
             if dice > 5-col:
                 col = (dice - (5-col))-1
@@ -57,45 +78,56 @@ class Board:
                 if row in self.CheckPoints and col > 0:
                     row += 1
                     col -=1
-
-            print(row,col) 
-            PlayerKeys[key].SetPosition(str(row)+','+str(col))       
-            self.LudoBoard[row][col].SetValue(PlayerKeys[key].GetName())
-            self.PrintBoard()
+            else:
+                col = dice + col
+            self.MoveorKill(row,col,player,key)
             return True
+        elif PlayerKeys[key].GetValue() == 0 and dice < 6:
+            print("Get a 6 to take it out of your house")
+            return True
+        else:
+            print("This key has already won. You cannot move it")
+            return False
+                            
+    def PrintPlayerKeys(self, player): 
+        keys = player.GetKeys()
+        print(player.GetColor()+' In House Keys  =  ', end="")
+        for i in keys:
+            if i.GetValue() == 0:
+                print(i.GetName()+" || ", end ="")
 
-                
-
-
+        print("\n" + player.GetColor()+' In Game Keys  =  ', end="")
+        for i in keys:
+            if i.GetValue() == 1:
+                print(i.GetName()+" || ", end="")
 
     def CreateTwoPlayers(self):
-        self.Players=np.empty(2,dtype=Player)
-        self.Players[0]=Player(self.Two[0], '0,1') 
-        self.Players[1]=Player(self.Two[1], '6,1')
+        self.Players = np.empty(2,dtype=Player)
+        self.Players[0] = Player(self.Two[0], '0,1') 
+        self.Players[1] = Player(self.Two[1], '6,1')
 
     def PlayforTwo(self):
-        print(("Two Players Ludo game").center(20,'*'))
+        title = "Two Players Ludo game"
+        print(title.center(20,'*'))
         self.CreateTwoPlayers()
         self.PrintBoard()
         i=0
         while(True):
             if i==2:
                 i=0
-            dice = self.RollDice()
+            dice = self.RollDice(i)
             print("\nRolling dice for "+self.Players[i].color+"'s turn  :  "+ str(dice))
-            print("Enter the key's name to move : ")
+            self.PrintPlayerKeys(self.Players[i])
+            print("\nEnter any one of these keys to move = ", end="")
             keys=self.Players[i].GetKeys()
             names=[]
-
             for j in range(0,len(keys)):
-                names.append(keys[j].GetName())
-                print(names[j],end=" ")
-                print("||||",end=" ")
-            print(" = ", end=" ")  
+                names.append(keys[j].GetName()) 
             key = input()
             if(key in names):
                 if self.MoveTheKey(key, dice, self.Players[i])==True:
                     i+=1
+                print(self.PrintBoard())
             else:
                 print("WRONGGG KEY INSERTION")
 
@@ -106,11 +138,19 @@ class Board:
             for j in range(0,6):
                 block = Block(self.rows_color[i],"  ")
                 self.LudoBoard[i][j]=block
+3
 
-
-    def RollDice(self):
-        return 6
-        # return random.randint(1,6)
+    def RollDice(self, value):
+        # if value % 2 == 1 and self.count > 2:
+        #     self.count += 1
+        #     return 0
+        # elif value % 2 == 0 and self.count > 2:
+        #     self.count += 1
+        #     return 3
+        # else:
+        #     self.count += 1
+        #     return 6
+        return random.randint(1,6)
 
     def PrintHalfColumn(self, col, i, j, string):
         print(string, end=" ")
@@ -157,6 +197,7 @@ class Board:
           
     def PrintBoard(self):
         string = "#"
+        print("\n\n")
         print(string*79)
         self.PrintColumns(10, 11, 0, string)
         self.PrintRows(9, 1, string)
