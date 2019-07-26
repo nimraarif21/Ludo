@@ -52,8 +52,12 @@ class Board:
             if dice > 5-col:
                 col = (dice - (5-col))-1
                 row += 1
-                if(row > 11):
+                if row > 11:
                     row = 0  
+                if row in self.CheckPoints and col > 0:
+                    row += 1
+                    col -=1
+
             print(row,col) 
             PlayerKeys[key].SetPosition(str(row)+','+str(col))       
             self.LudoBoard[row][col].SetValue(PlayerKeys[key].GetName())
@@ -66,8 +70,8 @@ class Board:
 
     def CreateTwoPlayers(self):
         self.Players=np.empty(2,dtype=Player)
-        self.Players[0]=Player(Two[0], '0,1') 
-        self.Players[1]=Player(Two[1], '6,1')
+        self.Players[0]=Player(self.Two[0], '0,1') 
+        self.Players[1]=Player(self.Two[1], '6,1')
 
     def PlayforTwo(self):
         print(("Two Players Ludo game").center(20,'*'))
@@ -100,7 +104,7 @@ class Board:
         self.LudoBoard = np.empty((12,6), dtype= Block)
         for i in range(0, 12):
             for j in range(0,6):
-                block = Block(rows_color[i],"  ")
+                block = Block(self.rows_color[i],"  ")
                 self.LudoBoard[i][j]=block
 
 
@@ -110,7 +114,7 @@ class Board:
 
     def PrintHalfColumn(self, col, i, j, string):
         print(string, end=" ")
-        if col in inverted:
+        if col in self.inverted:
             print(self.LudoBoard[col][j].GetValue(), end=" ")
         else:
             print(self.LudoBoard[col][i].GetValue(), end=" ")
@@ -131,7 +135,7 @@ class Board:
             j -= 1
 
     def PrintHalfRow(self, row, string):
-        if row in inverted:
+        if row in self.inverted:
             i = 5
             j = -1
             dec = -1
