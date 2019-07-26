@@ -4,18 +4,28 @@ from .Player import Player
 import numpy as np
 
 import random
-rows_color=['red','blue','blue','blue','yellow','yellow','yellow','green','green','green','red','red']
-Two=['Red','Yellow']
-inverted= [2, 3, 5, 6, 7, 10]
+
 # stops=[]
 
 class Board:
 
     LudoBoard = []
     Players = []
+    rows_color=['red','blue','blue','blue','yellow','yellow','yellow','green','green','green','red','red']
+    Two=['Red','Yellow']
+    inverted= [2, 3, 5, 6, 7, 10]
+    CheckPoints=[2, 5, 8, 11]
+
 
     def __init__(self):
         self.CreateBoard()
+
+
+    def mapStringtoInt(self, index):
+        indexes = index.split(',')
+        return int(indexes[0]), int(indexes[1])
+
+
 
     def MoveTheKey(self, key, dice, player):
         PlayerKeys = player.GetKeys()
@@ -23,19 +33,36 @@ class Board:
             if PlayerKeys[i].GetName() == key:
                 key = i
         
-        index = player.GetStartPoint()
-        indexes = index.split(',')
-        i=int(indexes[0])
-        j=int(indexes[1])
-        
         if PlayerKeys[key].GetValue() == 0 and dice == 6:
+            index = player.GetStartPoint()
+            row, col = self.mapStringtoInt(index)
             PlayerKeys[key].SetValue(1)
             PlayerKeys[key].SetPosition(index) 
-            self.LudoBoard[i][j].SetValue(PlayerKeys[key].GetName())
+            self.LudoBoard[row][col].SetValue(PlayerKeys[key].GetName())
             self.PrintBoard()
-            return
+            return True   #need to make it false later on
         
-        # elif PlayerKeys[key].GetValue == 1:
+        elif PlayerKeys[key].GetValue() == 1:
+            print("coming here")
+            curr_position = PlayerKeys[key].GetPosition()
+            print(curr_position)
+            row, col = self.mapStringtoInt(curr_position)
+            print(row,col)
+            self.LudoBoard[row][col].SetValue("  ")
+            if dice > 5-col:
+                col = (dice - (5-col))-1
+                row += 1
+                if(row > 11):
+                    row = 0  
+            print(row,col) 
+            PlayerKeys[key].SetPosition(str(row)+','+str(col))       
+            self.LudoBoard[row][col].SetValue(PlayerKeys[key].GetName())
+            self.PrintBoard()
+            return True
+
+                
+
+
 
     def CreateTwoPlayers(self):
         self.Players=np.empty(2,dtype=Player)
@@ -63,8 +90,8 @@ class Board:
             print(" = ", end=" ")  
             key = input()
             if(key in names):
-                self.MoveTheKey(key, dice, self.Players[i])
-                i+=1
+                if self.MoveTheKey(key, dice, self.Players[i])==True:
+                    i+=1
             else:
                 print("WRONGGG KEY INSERTION")
 
