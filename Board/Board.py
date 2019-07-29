@@ -5,8 +5,6 @@ import numpy as np
 
 import random
 
-# stops=[]
-
 class Board:
 
     LudoBoard = []
@@ -14,8 +12,7 @@ class Board:
     rows_color = ['red','blue','blue','blue','yellow','yellow','yellow','green','green','green','red','red']
     Two = ['Red','Yellow']
     inverted = [2, 3, 5, 6, 7, 10]
-    CheckPoints = [2, 5, 8, 11]
-    count = 1
+    CheckPoints = [11, 5, 2, 8] 
     
     def __init__(self):
         self.CreateBoard()
@@ -24,11 +21,25 @@ class Board:
         indexes = index.split(',')
         return int(indexes[0]), int(indexes[1])
 
+    def WinKey(self, player, key, dice):
+        curr_position = key.GetPosition()
+        row, col = self.mapStringtoInt(curr_position)
+        if dice-(5-col) > 1:
+            print("You cannot move this key")
+        elif dice-(5-col) == 1:
+            print("This key has won")
+            key.SetValue(3)
+            self.LudoBoard[row][col].SetValue("  ")
+            player.IncrementWonKeys()
+        else:
+            self.LudoBoard[row][col].SetValue("  ")
+            col += dice
+            self.LudoBoard[row][col].SetValue(key.GetName())
+            key.SetPosition(str(row)+','+str(col))
+
     def MoveorKill(self, row, col, player, key):
-        PlayerKeys = player.GetKeys()
         nextPos = self.LudoBoard[row][col].GetValue()
         flag = False
-
         for i in self.Players:  #OtherPlayer
             if i != player:
                 second_player = i
@@ -38,51 +49,59 @@ class Board:
             if second_keys[i].GetName() == nextPos:
                 second_key_index = i
                 flag = True
+                break
         
         if flag == True:
-            self.LudoBoard[row][col].SetValue(PlayerKeys[key].GetName())
+            self.LudoBoard[row][col].SetValue(key.GetName())
             second_keys[second_key_index].SetValue(0)
             second_keys[second_key_index].SetPosition('-1,-1')
-            PlayerKeys[key].SetPosition(str(row)+','+str(col))
+            key.SetPosition(str(row)+','+str(col))
             print("You killed Other Player's Key")
             return
         else:
-
-            PlayerKeys[key].SetPosition(str(row)+','+str(col))      
-            self.LudoBoard[row][col].SetValue(PlayerKeys[key].GetName())
+            key.SetPosition(str(row)+','+str(col))      
+            self.LudoBoard[row][col].SetValue(key.GetName())
             return
             
 
     def MoveTheKey(self, key, dice, player):
-        PlayerKeys = player.GetKeys()
-        for i in range(len(PlayerKeys)):
-            if PlayerKeys[i].GetName() == key:
-                key = i
-        
-        if PlayerKeys[key].GetValue() == 0 and dice == 6:
+        if key.GetValue() == 0 and dice == 6:
             index = player.GetStartPoint()
             row, col = self.mapStringtoInt(index)
-            PlayerKeys[key].SetValue(1)
-            PlayerKeys[key].SetPosition(index) 
-            self.LudoBoard[row][col].SetValue(PlayerKeys[key].GetName())
+            key.SetValue(1)
+            key.SetPosition(index) 
+            self.LudoBoard[row][col].SetValue(key.GetName())
             return False        
-        elif PlayerKeys[key].GetValue() == 1:
-            curr_position = PlayerKeys[key].GetPosition()
-            row, col = self.mapStringtoInt(curr_position)
-            self.LudoBoard[row][col].SetValue("  ")
-            if dice > 5-col:
-                col = (dice - (5-col))-1
-                row += 1
+        elif key.GetValue() == 1:
+            curr_position = key.GetPosition()
+            old_row, old_col = self.mapStringtoInt(curr_position)
+            if dice > 5-old_col:
+                col = (dice - (5-old_col))-1
+                row = old_row + 1
+                if row in self.CheckPoints and col > 0:
+                    if row != player.GetCheckPoint():
+                        row += 1
+                        col -= 1
                 if row > 11:
                     row = 0  
-                if row in self.CheckPoints and col > 0:
-                    row += 1
-                    col -=1
             else:
-                col = dice + col
-            self.MoveorKill(row,col,player,key)
+                row = old_row
+                col = dice + old_col
+            if row == player.GetCheckPoint():
+                key.SetValue(2)
+                self.WinKey(player, key, dice)
+            else:
+                self.LudoBoard[old_row][old_col].SetValue("  ")
+                self.MoveorKill(row, col, player, key)
+            if dice == 6:
+                return False
             return True
-        elif PlayerKeys[key].GetValue() == 0 and dice < 6:
+        elif key.GetValue() == 2:
+            if dice == 6:
+                return False
+            self.WinKey(player, key, dice)
+            return True
+        elif key.GetValue() == 0 and dice < 6:
             print("Get a 6 to take it out of your house")
             return True
         else:
@@ -91,53 +110,74 @@ class Board:
                             
     def PrintPlayerKeys(self, player): 
         keys = player.GetKeys()
-        print(player.GetColor()+' In House Keys  =  ', end="")
+        print(player.GetColor()+' Player In House Keys  =  ', end="")
         for i in keys:
             if i.GetValue() == 0:
                 print(i.GetName()+" || ", end ="")
 
-        print("\n" + player.GetColor()+' In Game Keys  =  ', end="")
+        print("\n" + player.GetColor()+' Player In Game Keys  =  ', end="")
         for i in keys:
-            if i.GetValue() == 1:
+            if i.GetValue() == 1 or i.GetValue() == 2:
                 print(i.GetName()+" || ", end="")
+
+        print("\n" + player.GetColor()+' Player Keys Won  =  ', end="")
+        for i in keys:
+            if i.GetValue() == 3:
+                print(i.GetName()+" || ", end="")
+
+        
 
     def CreateTwoPlayers(self):
         self.Players = np.empty(2,dtype=Player)
-        self.Players[0] = Player(self.Two[0], '0,1') 
-        self.Players[1] = Player(self.Two[1], '6,1')
+        self.Players[0] = Player(self.Two[0], '0,1', self.CheckPoints[0], 0) 
+        self.Players[1] = Player(self.Two[1], '6,1', self.CheckPoints[1], 0)
+
+    def checkWin(self):
+        for i in self.Players:
+            if i.GetWonKeys()==4:
+                print("Player "+ i.GetColor()+ " has won the game!!!!")
+                return True
+        return False
+            
 
     def PlayforTwo(self):
         title = "Two Players Ludo game"
         print(title.center(20,'*'))
         self.CreateTwoPlayers()
         self.PrintBoard()
-        i=0
+        i = 0
+        flag = 0
         while(True):
-            if i==2:
-                i=0
+            if self.checkWin() == True:
+                break
+            if i == 2:
+                i = 0
             dice = self.RollDice(i)
             print("\nRolling dice for "+self.Players[i].color+"'s turn  :  "+ str(dice))
             self.PrintPlayerKeys(self.Players[i])
             print("\nEnter any one of these keys to move = ", end="")
-            keys=self.Players[i].GetKeys()
-            names=[]
-            for j in range(0,len(keys)):
-                names.append(keys[j].GetName()) 
             key = input()
-            if(key in names):
+            keys = self.Players[i].GetKeys()
+            for j in range(0, len(keys)):
+                if keys[j].GetName() == key:
+                    flag = 1
+                    key = keys[j]
+                    break
+
+            if flag == 1:
                 if self.MoveTheKey(key, dice, self.Players[i])==True:
-                    i+=1
+                    i += 1
                 print(self.PrintBoard())
             else:
                 print("WRONGGG KEY INSERTION")
 
               
     def CreateBoard(self):
-        self.LudoBoard = np.empty((12,6), dtype= Block)
+        self.LudoBoard = np.empty((12,6), dtype=Block)
         for i in range(0, 12):
             for j in range(0,6):
                 block = Block(self.rows_color[i],"  ")
-                self.LudoBoard[i][j]=block
+                self.LudoBoard[i][j] = block
 
     def RollDice(self, value):
         return random.randint(1,6)
